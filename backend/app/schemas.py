@@ -276,3 +276,53 @@ class AdjustmentOut(ORM):
     amount: int
     description: str
     invoice_id: UUID | None
+
+
+PaymentMethod = Literal["cash", "card", "transfer", "other"]
+
+
+class PaymentIn(BaseModel):
+    amount: int = Field(gt=0, description="minor units (tiyin)")
+    paid_on: date
+    method: PaymentMethod = "cash"
+    reference: str | None = Field(default=None, max_length=200)
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ReasonIn(BaseModel):
+    reason: str = Field(min_length=1, max_length=500)
+
+
+class PaymentOut(ORM):
+    id: UUID
+    lease_id: UUID
+    amount: int
+    paid_on: date
+    method: str
+    reference: str | None
+    note: str | None
+    reversed_at: datetime | None
+    allocated: int = 0
+    credit: int = 0  # unallocated remainder (becomes credit for the next invoice)
+
+
+class LedgerEntryOut(ORM):
+    id: int
+    entry_type: str
+    amount: int
+    ref_type: str
+    ref_id: UUID
+    description: str
+    reverses_id: int | None
+    created_at: datetime
+    running_balance: int = 0
+
+
+class BalanceOut(BaseModel):
+    lease_id: UUID
+    balance: int
+    owed: int
+    credit: int
+    overdue: int
+    next_due_date: date | None
+    next_due_amount: int
