@@ -69,5 +69,5 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["app.domain.*", "app.billing.core", "app.billing.rules"]
+module = ["app.domain.*", "app.billing.core", "app.billing.periods", "app.billing.allocation"]
 strict = true

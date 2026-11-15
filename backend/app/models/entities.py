@@ -222,7 +222,6 @@ class Invoice(Base):
     __table_args__ = (
         UniqueConstraint("lease_id", "period_start", name="uq_invoices_lease_period"),
         CheckConstraint("status IN ('issued','void')", name="status"),
-        CheckConstraint("total >= 0", name="total_nonneg"),
     )
     id: Mapped[uuid.UUID] = uuid_pk()
     lease_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("leases.id"), index=True)
@@ -260,6 +259,20 @@ class InvoiceLine(Base):
         Boolean, default=False, server_default=text("false")
     )
     invoice: Mapped[Invoice] = relationship(back_populates="lines")
+
+
+class LeaseAdjustment(Base):
+    """Manual charge/discount waiting to be included in the lease's next invoice."""
+
+    __tablename__ = "lease_adjustments"
+    __table_args__ = (CheckConstraint("amount <> 0", name="amount_nonzero"),)
+    id: Mapped[uuid.UUID] = uuid_pk()
+    lease_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("leases.id"), index=True)
+    amount: Mapped[int] = mapped_column(BigInteger)
+    description: Mapped[str] = mapped_column(String(500))
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("invoices.id"))
+    created_at: Mapped[datetime] = created_at_col()
 
 
 class Payment(Base):

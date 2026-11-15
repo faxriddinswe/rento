@@ -214,3 +214,65 @@ class ReadingOut(ORM):
     photo_key: str | None
     photo_url: str | None = None
     created_at: datetime
+
+
+class InvoiceLineOut(ORM):
+    id: UUID
+    sort: int
+    kind: str
+    description: str
+    quantity: Decimal
+    unit_price: Decimal
+    amount: int
+    meter_id: UUID | None
+    pending_reading: bool
+
+
+class InvoiceOut(ORM):
+    id: UUID
+    lease_id: UUID
+    number: str
+    period_start: date
+    period_end: date
+    issue_date: date
+    due_date: date
+    total: int
+    previous_balance: int
+    status: str
+    paid: int = 0
+    remaining: int = 0
+    lines: list[InvoiceLineOut] = []
+
+
+class BillingRunIn(BaseModel):
+    through: date | None = Field(
+        default=None, description="bill all periods up to this date (default today)"
+    )
+
+
+class BillingRunOut(BaseModel):
+    created: int
+    exists: int
+    skipped: int
+    missing_tariff: int
+    invoice_ids: list[UUID]
+
+
+class AdjustmentIn(BaseModel):
+    amount: int = Field(description="minor units; negative = discount")
+    description: str = Field(min_length=1, max_length=500)
+
+    @field_validator("amount")
+    @classmethod
+    def _nonzero(cls, v: int) -> int:
+        if v == 0:
+            raise ValueError("amount must not be zero")
+        return v
+
+
+class AdjustmentOut(ORM):
+    id: UUID
+    lease_id: UUID
+    amount: int
+    description: str
+    invoice_id: UUID | None
