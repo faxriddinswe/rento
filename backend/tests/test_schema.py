@@ -20,7 +20,7 @@ from app.models.entities import (
 
 
 async def _base(session):
-    owner = User(email="o@example.test", full_name="Owner", role="owner")
+    owner = User(email="o@demo-mail.org", full_name="Owner", role="owner")
     session.add(owner)
     await session.flush()
     prop = Property(owner_id=owner.id, name="P")

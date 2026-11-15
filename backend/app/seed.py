@@ -27,30 +27,30 @@ DEMO_PASSWORD = "demo-password-FAKE"
 
 async def seed() -> bool:
     async with get_sessionmaker()() as s:
-        if (await s.execute(select(User).where(User.email == "owner@demo.rento.test"))).first():
+        if (await s.execute(select(User).where(User.email == "owner@demo.demo-mail.org"))).first():
             return False
         pw = hash_password(DEMO_PASSWORD)
         owner = User(
-            email="owner@demo.rento.test",
+            email="owner@demo.demo-mail.org",
             full_name="FAKE Owner",
             role="owner",
             password_hash=pw,
             phone="+000 00 000 00 00",
         )
         mgr = User(
-            email="manager@demo.rento.test",
+            email="manager@demo.demo-mail.org",
             full_name="FAKE Manager",
             role="manager",
             password_hash=pw,
         )
         t1 = User(
-            email="tenant1@demo.rento.test",
+            email="tenant1@demo.demo-mail.org",
             full_name="FAKE Tenant One",
             role="tenant",
             password_hash=pw,
         )
         t2 = User(
-            email="tenant2@demo.rento.test",
+            email="tenant2@demo.demo-mail.org",
             full_name="FAKE Tenant Two",
             role="tenant",
             password_hash=pw,
@@ -64,7 +64,13 @@ async def seed() -> bool:
             PropertyManager(
                 property_id=prop.id,
                 user_id=mgr.id,
-                permissions=["readings.review", "payments.record"],
+                permissions=[
+                    "reading.review",
+                    "payment.record",
+                    "reading.read",
+                    "lease.read",
+                    "property.read",
+                ],
             )
         )
         u1 = Unit(property_id=prop.id, name="Apt 1")

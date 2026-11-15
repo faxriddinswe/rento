@@ -46,7 +46,11 @@ async def _migrated_db() -> AsyncIterator[None]:
 async def _clean_tables(_migrated_db: None) -> AsyncIterator[None]:
     yield
     from app.db import get_engine
+    from app.services.ratelimit import get_redis
 
+    r = get_redis()
+    for k in await r.keys("rl:*"):
+        await r.delete(k)
     async with get_engine().begin() as conn:
         names = (
             await conn.execute(

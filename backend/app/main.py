@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import auth, health
 from app.config import get_settings
 from app.db import dispose_engine
 from app.errors import install_error_handlers
@@ -53,6 +53,7 @@ def create_app() -> FastAPI:
         return response
 
     app.include_router(health.router)
+    app.include_router(auth.router)
     return app
 
 
