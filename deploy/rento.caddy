@@ -1,0 +1,7 @@
+# copied to /opt/edge/sites/rento.caddy ; hostnames come from .env.deploy via scripts/deploy.sh
+{$RENTO_HOST} {
+	reverse_proxy frontend:3010
+}
+{$RENTO_FILES_HOST} {
+	reverse_proxy minio:9000
+}

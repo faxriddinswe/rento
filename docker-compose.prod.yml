@@ -1,0 +1,56 @@
+# Production stack. No published ports: traffic enters only via the shared edge Caddy (network "edge").
+name: ${COMPOSE_PROJECT_NAME:-rento}
+x-log: &log
+  logging: {driver: json-file, options: {max-size: "10m", max-file: "3"}}
+services:
+  postgres:
+    image: postgres:16-alpine
+    <<: *log
+    restart: unless-stopped
+    environment: {POSTGRES_USER: rento, POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}", POSTGRES_DB: rento}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    mem_limit: 384m
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U rento"], interval: 10s, timeout: 3s, retries: 10}
+  redis:
+    image: redis:7-alpine
+    <<: *log
+    restart: unless-stopped
+    mem_limit: 128m
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 10s, timeout: 3s, retries: 10}
+  minio:
+    image: chainguard/minio:latest
+    <<: *log
+    restart: unless-stopped
+    command: server /data
+    environment: {MINIO_ROOT_USER: "${S3_ACCESS_KEY}", MINIO_ROOT_PASSWORD: "${S3_SECRET_KEY}"}
+    volumes: [miniodata:/data]
+    mem_limit: 192m
+    networks: [default, edge]
+  api: &app
+    build: ./backend
+    <<: *log
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DATABASE_URL: postgresql+asyncpg://rento:${POSTGRES_PASSWORD}@postgres:5432/rento
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT_URL: http://minio:9000
+    depends_on: {postgres: {condition: service_healthy}, redis: {condition: service_healthy}}
+    mem_limit: 384m
+    networks: [default, edge]
+    healthcheck: {test: ["CMD", "python", "-c", "import urllib.request as u;u.urlopen('http://localhost:8000/health')"], interval: 15s, timeout: 5s, retries: 5}
+  worker:
+    <<: *app
+    command: ["arq", "app.worker.WorkerSettings"]
+    mem_limit: 320m
+    healthcheck: {disable: true}
+  frontend:
+    build: ./frontend
+    <<: *log
+    restart: unless-stopped
+    environment: {API_INTERNAL_URL: "http://api:8000"}
+    mem_limit: 192m
+    networks: [default, edge]
+volumes: {pgdata: {}, miniodata: {}}
+networks:
+  edge: {external: true}

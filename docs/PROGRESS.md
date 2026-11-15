@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## CURRENT STATE / NEXT STEP
-- Phases 0–7 done (backend complete, 180 tests passing). Phase 8 (frontend) IN PROGRESS: all pages written under frontend/src/app (login, signup, invite, owner/*, tenant/*), typecheck was being fixed; NOT yet verified: `npm run lint`, `npm run build`, browser run. **NEXT: finish Phase 8 (tsc, lint, build, smoke in browser, commit), then Phase 9 hardening (backups, load test), Phase 10 deploy (Dockerfile for frontend, prod compose, edge caddy, deploy.sh), Phase 11 docs (README, RUNBOOK, DEPLOY, uz/LEARN.md, final report).**
+- All phases implemented locally; remaining: deploy (BLOCKERS 2–3).
 - Infra running locally: `docker compose up -d postgres redis minio` (ports 5441/6391/9110). Test DB `rento_test` is created automatically by tests.
 - Run checks: `cd backend && uv run ruff check . && uv run mypy app && uv run pytest -q`
 
@@ -14,3 +14,4 @@
 - 2026-11-15 Phase 4: readings (presigned POST upload, submit with key-prefix/type/size/date/monotonic checks, confirm/reject + notification outbox, owner baseline for new/replaced meter). Real MinIO integration test proves storage-side policy (size/content-type) enforcement. `pytest`: 116 passed.
 - 2026-11-15 Phase 5: pure billing core (`app/billing/core.py`, `periods.py`, `allocation.py`, mypy strict) + hypothesis tests (total==sum(lines), periods tile lease, FIFO invariants, prorate bounds); DB service + idempotent job (per-lease transaction, row lock, unique (lease, period_start), 7-day catch-up) + ARQ worker (cron 00:10 Asia/Tashkent). Ran the real worker against Redis: `cron:daily_billing ● {'created': 0, ...}`. Migration 2 (adjustments, invoice number sequence, dropped total>=0 check) up/down OK. `pytest`: 152 passed.
 - 2026-11-15 Phase 7: invoice/contract PDFs (WeasyPrint 70 + Jinja2; sandboxed owner template; URL fetching blocked; versioned documents in MinIO), Telegram transport behind `Notifier` (aiogram 3 bot with deep-link `/start <signed token>`, outbox delivery, scans for due/overdue/reading reminders). Backend support for the UI: `/dashboard`, `/audit` (scoped by `owner_id`, migration 3). `pytest`: 180 passed; ruff + mypy clean. Real Telegram API not exercised (BLOCKER 1).
+- 2026-11-16 Phase 8–11: frontend `tsc`, `lint`, `build` pass; stack run locally (api :8010, worker, frontend :3010); smoke via frontend proxy: login → billing run (10 invoices) → invoice PDF (200, %PDF) → dashboard OK. Backup + restore into a new DB verified (10 invoices). Prod compose/Dockerfile/deploy.sh written but NOT built/executed (BLOCKERS 2–3). Docs written.
