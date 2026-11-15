@@ -31,3 +31,15 @@ Tests run against a real PostgreSQL 16 database `rento_test`, created fresh each
 
 ## D008 — Presigned POST (not PUT)
 S3 presigned **POST** policies can enforce `content-length-range` and `Content-Type` on the storage side; presigned PUT cannot cap size. The server additionally `HEAD`s the object on submit.
+
+## D009 — PDF generation runs in the API process, one at a time
+WeasyPrint is memory-hungry. Instead of a second queue round-trip, PDFs render in a thread behind `asyncio.Semaphore(1)`; invoice PDFs of *issued* invoices are rendered once and served from object storage (issued invoices are immutable). Memory will be measured in the deploy phase; if it exceeds the 384 MB budget the render moves to the ARQ worker (same function).
+
+## D010 — Contract templates are sandboxed plain text
+Owner-editable templates are rendered with Jinja2 `SandboxedEnvironment` + `StrictUndefined` (unknown placeholder = 422), then the *whole result is HTML-escaped* and placed in a `white-space: pre-wrap` block, and WeasyPrint's `url_fetcher` refuses every external/file URL. This blocks template injection, HTML/script injection and SSRF/LFI through the template. Each save creates a new template version; each generated contract is a new versioned PDF.
+
+## D011 — Notification outbox
+Business code only inserts `notifications` rows (unique `dedupe_key`) inside the same transaction as the business change; a worker cron delivers them every minute (`FOR UPDATE SKIP LOCKED`, 5 attempts). So a crash can never send a notification for a rolled-back change, and re-running any job never double-sends. Time-based reminders (due tomorrow, overdue every 3 days, reading reminder 2 days before billing day) are queued by a daily 09:00 scan.
+
+## D012 — Audit rows are scoped by `owner_id`
+`audit_log.owner_id` records whose data an action concerns (set from the authorized resource, or explicitly by jobs). `GET /audit` returns only the caller's rows, so one owner can never read another owner's history.

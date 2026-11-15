@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## CURRENT STATE / NEXT STEP
-- Phases 0–5 done. **NEXT: Phase 6 — payments & ledger: record payment, FIFO allocation, reversal, void invoice, ledger & balance endpoints**.
+- Phases 0–7 done (+dashboard/audit API). **NEXT: Phase 8 — Frontend (Next.js, TS, Tailwind, TanStack Query, OpenAPI types, i18n uz)**.
 - Infra running locally: `docker compose up -d postgres redis minio` (ports 5441/6391/9110). Test DB `rento_test` is created automatically by tests.
 - Run checks: `cd backend && uv run ruff check . && uv run mypy app && uv run pytest -q`
 
@@ -13,3 +13,4 @@
 - 2026-11-15 Phase 3: CRUD for properties/managers/units/leases(+invite)/meters/tariffs (history closes previous open tariff). `pytest` 107 passed at that point.
 - 2026-11-15 Phase 4: readings (presigned POST upload, submit with key-prefix/type/size/date/monotonic checks, confirm/reject + notification outbox, owner baseline for new/replaced meter). Real MinIO integration test proves storage-side policy (size/content-type) enforcement. `pytest`: 116 passed.
 - 2026-11-15 Phase 5: pure billing core (`app/billing/core.py`, `periods.py`, `allocation.py`, mypy strict) + hypothesis tests (total==sum(lines), periods tile lease, FIFO invariants, prorate bounds); DB service + idempotent job (per-lease transaction, row lock, unique (lease, period_start), 7-day catch-up) + ARQ worker (cron 00:10 Asia/Tashkent). Ran the real worker against Redis: `cron:daily_billing ● {'created': 0, ...}`. Migration 2 (adjustments, invoice number sequence, dropped total>=0 check) up/down OK. `pytest`: 152 passed.
+- 2026-11-15 Phase 7: invoice/contract PDFs (WeasyPrint 70 + Jinja2; sandboxed owner template; URL fetching blocked; versioned documents in MinIO), Telegram transport behind `Notifier` (aiogram 3 bot with deep-link `/start <signed token>`, outbox delivery, scans for due/overdue/reading reminders). Backend support for the UI: `/dashboard`, `/audit` (scoped by `owner_id`, migration 3). `pytest`: 180 passed; ruff + mypy clean. Real Telegram API not exercised (BLOCKER 1).

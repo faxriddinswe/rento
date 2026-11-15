@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, EmailStr, Field
@@ -108,7 +109,9 @@ async def signup(body: SignupIn, session: Session) -> TokenOut:
     )
     session.add(user)
     await session.flush()
-    await audit(session, user.id, "user.signup", "user", user.id, after={"role": "owner"})
+    await audit(
+        session, user.id, "user.signup", "user", user.id, after={"role": "owner"}, owner_id=user.id
+    )
     return await _tokens(session, user)
 
 
@@ -192,6 +195,37 @@ async def invite_accept(body: AcceptInviteIn, session: Session) -> TokenOut:
     lease.tenant_id = user.id
     invite.accepted_at = datetime.now(UTC)
     await audit(
-        session, user.id, "invite.accept", "lease", lease.id, after={"tenant_id": str(user.id)}
+        session,
+        user.id,
+        "invite.accept",
+        "lease",
+        lease.id,
+        after={"tenant_id": str(user.id)},
+        owner_id=await _lease_owner(session, lease),
     )
     return await _tokens(session, user)
+
+
+class TelegramLinkOut(BaseModel):
+    token: str
+    url: str | None
+
+
+@router.post("/telegram-link", response_model=TelegramLinkOut)
+async def telegram_link(user: CurrentUser) -> TelegramLinkOut:
+    """Signed, expiring deep link (t.me/<bot>?start=<token>) that binds a Telegram chat to this user.
+    ``url`` is null until TELEGRAM_BOT_USERNAME is configured (see docs/BLOCKERS.md)."""
+    from app.services.telegram import deep_link, make_link_token
+
+    token = make_link_token(user.id)
+    return TelegramLinkOut(token=token, url=deep_link(token))
+
+
+async def _lease_owner(session: Session, lease: Lease) -> UUID:
+    from app.models.entities import Property, Unit
+
+    unit = await session.get(Unit, lease.unit_id)
+    assert unit is not None
+    prop = await session.get(Property, unit.property_id)
+    assert prop is not None
+    return prop.owner_id

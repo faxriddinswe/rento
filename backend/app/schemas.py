@@ -326,3 +326,54 @@ class BalanceOut(BaseModel):
     overdue: int
     next_due_date: date | None
     next_due_amount: int
+
+
+class TemplateIn(BaseModel):
+    body: str = Field(min_length=10, max_length=20000)
+
+
+class TemplateOut(BaseModel):
+    version: int
+    body: str
+    is_default: bool
+    placeholders: list[str]
+
+
+class DocumentOut(ORM):
+    id: UUID
+    kind: str
+    ref_id: UUID
+    lease_id: UUID
+    version: int
+    created_at: datetime
+
+
+class OverdueRow(BaseModel):
+    lease_id: UUID
+    property_name: str
+    unit_name: str
+    tenant_name: str | None
+    overdue: int
+    oldest_due_date: date
+
+
+class DashboardOut(BaseModel):
+    month: str
+    expected: int  # invoiced (issued) this month
+    collected: int  # payments received this month (net of reversals)
+    outstanding: int  # total still owed on issued invoices
+    active_leases: int
+    pending_readings: int
+    overdue: list[OverdueRow]
+
+
+class AuditOut(ORM):
+    id: int
+    actor_id: UUID | None
+    action: str
+    entity_type: str
+    entity_id: str
+    before: dict[str, object] | None
+    after: dict[str, object] | None
+    request_id: str | None
+    created_at: datetime

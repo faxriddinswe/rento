@@ -7,7 +7,18 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, billing, health, leases, meters, payments, properties, readings
+from app.api import (
+    auth,
+    billing,
+    dashboard,
+    documents,
+    health,
+    leases,
+    meters,
+    payments,
+    properties,
+    readings,
+)
 from app.config import get_settings
 from app.db import dispose_engine
 from app.errors import install_error_handlers
@@ -66,6 +77,8 @@ def create_app() -> FastAPI:
     app.include_router(readings.router)
     app.include_router(billing.router)
     app.include_router(payments.router)
+    app.include_router(documents.router)
+    app.include_router(dashboard.router)
     return app
 
 

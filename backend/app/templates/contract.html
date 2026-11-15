@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8"><title>{{ title }}</title>
+<style>
+@page { size: A4; margin: 20mm 18mm 22mm 18mm; }
+body { font-family: "DejaVu Sans", sans-serif; font-size: 10.5pt; line-height: 1.45; color: #111; }
+.body { white-space: pre-wrap; }
+.footer { margin-top: 24pt; padding-top: 6pt; border-top: 0.5pt solid #999; font-size: 8pt; color: #666; }
+</style></head><body>
+<div class="body">{{ text|safe }}</div>
+<div class="footer">{{ disclaimer }}</div>
+</body></html>

@@ -1,6 +1,7 @@
 import uuid
 from typing import Annotated
 
+import structlog
 from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,6 +52,14 @@ def authorize(actor: Actor, action: Action, resource: Resource | None = None) ->
     """Raise 403 unless the policy allows it."""
     if not can(actor, action, resource):
         raise Forbidden(f"Not allowed: {action.value}")
+    # remember whose data this request touches so audit rows can be scoped per owner
+    owner = (
+        resource.owner_id
+        if resource and resource.owner_id
+        else (actor.id if actor.role == "owner" else None)
+    )
+    if owner:
+        structlog.contextvars.bind_contextvars(owner_id=str(owner))
 
 
 StorageDep = Annotated[Storage, Depends(get_storage)]
