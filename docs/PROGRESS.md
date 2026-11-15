@@ -1,7 +1,7 @@
 # PROGRESS
 
 ## CURRENT STATE / NEXT STEP
-- Phases 0–7 done (+dashboard/audit API). **NEXT: Phase 8 — Frontend (Next.js, TS, Tailwind, TanStack Query, OpenAPI types, i18n uz)**.
+- Phases 0–7 done (backend complete, 180 tests passing). Phase 8 (frontend) IN PROGRESS: all pages written under frontend/src/app (login, signup, invite, owner/*, tenant/*), typecheck was being fixed; NOT yet verified: `npm run lint`, `npm run build`, browser run. **NEXT: finish Phase 8 (tsc, lint, build, smoke in browser, commit), then Phase 9 hardening (backups, load test), Phase 10 deploy (Dockerfile for frontend, prod compose, edge caddy, deploy.sh), Phase 11 docs (README, RUNBOOK, DEPLOY, uz/LEARN.md, final report).**
 - Infra running locally: `docker compose up -d postgres redis minio` (ports 5441/6391/9110). Test DB `rento_test` is created automatically by tests.
 - Run checks: `cd backend && uv run ruff check . && uv run mypy app && uv run pytest -q`
 
