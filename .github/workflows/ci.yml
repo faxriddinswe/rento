@@ -1,0 +1,51 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: {POSTGRES_USER: rento, POSTGRES_PASSWORD: rento, POSTGRES_DB: rento}
+        ports: ["5441:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rento" --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6391:6379"]
+    env:
+      DATABASE_URL: postgresql+asyncpg://rento:rento@localhost:5441/rento
+      TEST_DATABASE_URL: postgresql+asyncpg://rento:rento@localhost:5441/rento_test
+      REDIS_URL: redis://localhost:6391/0
+      S3_ENDPOINT_URL: http://localhost:9110
+      S3_PUBLIC_ENDPOINT_URL: http://localhost:9110
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: System libs for WeasyPrint
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+      - name: MinIO
+        run: |
+          docker run -d --name minio -p 9110:9000 -e MINIO_ROOT_USER=rentominio -e MINIO_ROOT_PASSWORD=rentominio-dev-secret chainguard/minio:latest server /data
+      - run: uv sync --frozen
+        working-directory: backend
+      - run: uv run ruff check . && uv run ruff format --check .
+        working-directory: backend
+      - run: uv run mypy app
+        working-directory: backend
+      - run: uv run pytest -q
+        working-directory: backend
+  frontend:
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('frontend/package.json') != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run lint && npm run typecheck && npm run build
+        working-directory: frontend
