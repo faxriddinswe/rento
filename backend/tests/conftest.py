@@ -72,8 +72,18 @@ async def session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[AsyncClient]:
-    from app.main import app
+def storage():
+    from tests.fakes import InMemoryStorage
 
+    return InMemoryStorage()
+
+
+@pytest.fixture
+async def client(storage) -> AsyncIterator[AsyncClient]:
+    from app.main import app
+    from app.services.storage import get_storage
+
+    app.dependency_overrides[get_storage] = lambda: storage
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+    app.dependency_overrides.clear()

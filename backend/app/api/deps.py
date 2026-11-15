@@ -10,6 +10,7 @@ from app.domain.policies import Action, Actor, Resource, can
 from app.errors import Forbidden, Unauthorized
 from app.models.entities import PropertyManager, User
 from app.services.auth import decode_access_token
+from app.services.storage import Storage, get_storage
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
@@ -50,3 +51,6 @@ def authorize(actor: Actor, action: Action, resource: Resource | None = None) ->
     """Raise 403 unless the policy allows it."""
     if not can(actor, action, resource):
         raise Forbidden(f"Not allowed: {action.value}")
+
+
+StorageDep = Annotated[Storage, Depends(get_storage)]

@@ -7,7 +7,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, health
+from app.api import auth, health, leases, meters, properties, readings
 from app.config import get_settings
 from app.db import dispose_engine
 from app.errors import install_error_handlers
@@ -17,6 +17,12 @@ from app.logging import configure_logging, get_logger
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging()
+    try:
+        from app.services.storage import get_storage
+
+        await get_storage().ensure_bucket()
+    except Exception as exc:  # storage may come up later; /ready reports it
+        get_logger().warning("bucket_init_failed", error=repr(exc))
     yield
     await dispose_engine()
 
@@ -54,6 +60,10 @@ def create_app() -> FastAPI:
 
     app.include_router(health.router)
     app.include_router(auth.router)
+    app.include_router(properties.router)
+    app.include_router(leases.router)
+    app.include_router(meters.router)
+    app.include_router(readings.router)
     return app
 
 
